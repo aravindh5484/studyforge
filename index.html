@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StudyForge – GenAI Learning Studio</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f5fb;--card:#fff;--tx:#1d1b2e;--mu:#6b6880;--ac:#5b3df5;--ac2:#ff7a59;--bd:#e3e0f0;--ok:#16a34a;--bad:#dc2626;color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12111b;--card:#1c1a2b;--tx:#efeefa;--mu:#a09cc0;--ac:#8b74ff;--ac2:#ff9274;--bd:#2f2c46;--ok:#4ade80;--bad:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12111b;--card:#1c1a2b;--tx:#efeefa;--mu:#a09cc0;--ac:#8b74ff;--ac2:#ff9274;--bd:#2f2c46;--ok:#4ade80;--bad:#f87171;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 "Segoe UI",system-ui,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+h1{margin:0;font-size:1.7rem}h1 span{color:var(--ac)}
+.sub{color:var(--mu);margin:2px 0 18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
+textarea{width:100%;min-height:150px;border:1px solid var(--bd);border-radius:10px;padding:12px;background:var(--bg);color:var(--tx);font:inherit;resize:vertical}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab,.btn{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:9px 16px;border-radius:999px;cursor:pointer;font:inherit;font-weight:600}
+.tab.on,.btn.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.btn:disabled{opacity:.5;cursor:wait}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+select{padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit}
+.pane{display:none}.pane.on{display:block}
+.out{white-space:pre-wrap}
+.msg{color:var(--mu);font-size:.9rem}.err{color:var(--bad)}
+.q{margin-bottom:14px}.q b{display:block;margin-bottom:6px}
+.opt{display:block;width:100%;text-align:left;padding:9px 12px;margin:4px 0;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;cursor:pointer}
+.opt.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.opt.no{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.why{font-size:.9rem;color:var(--mu);margin-top:4px}
+.score{font-size:1.2rem;font-weight:700;color:var(--ac)}
+.info{border-radius:16px;padding:22px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+.info h2{margin:0;font-size:1.6rem}.info p{margin:4px 0 0;opacity:.9}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}
+.stat{background:rgba(255,255,255,.18);border-radius:12px;padding:12px;text-align:center}
+.stat b{display:block;font-size:1.6rem}
+.pts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.pt{background:var(--card);color:var(--tx);border-radius:12px;padding:12px}
+.pt h3{margin:0 0 4px;font-size:1rem;color:var(--ac)}.pt .n{display:inline-block;background:var(--ac);color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;font-size:.8rem;line-height:24px;margin-right:6px}
+.take{margin-top:14px;background:rgba(0,0,0,.25);border-radius:12px;padding:12px;font-weight:600}
+canvas,video{width:100%;border-radius:12px;background:#000;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Study<span>Forge</span></h1>
+  <p class="sub">Paste any study material and turn it into a summary, quiz, infographic and video.</p>
+
+  <div class="card">
+    <textarea id="src" placeholder="Paste your notes, article or chapter text here (at least a few paragraphs works best)…"></textarea>
+    <div class="row"><span class="msg" id="count">0 words</span>
+      <button class="btn" id="sample">Load sample text</button></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-t="sum">📝 Summariser</button>
+    <button class="tab" data-t="quiz">❓ Quiz</button>
+    <button class="tab" data-t="inf">📊 Infographic</button>
+    <button class="tab" data-t="vid">🎬 Video</button>
+  </div>
+
+  <div class="card pane on" id="sum">
+    <div class="row" style="margin-top:0">
+      <select id="slen"><option value="3 short sentences">Brief</option><option value="one paragraph of about 120 words" selected>Standard</option><option value="a detailed summary of about 300 words with bullet points">Detailed</option></select>
+      <button class="btn p" id="gSum">Summarise</button>
+    </div>
+    <p class="msg" id="mSum"></p><div class="out" id="oSum"></div>
+  </div>
+
+  <div class="card pane" id="quiz">
+    <div class="row" style="margin-top:0">
+      <select id="qn"><option>3</option><option selected>5</option><option>8</option></select> questions
+      <select id="qd"><option>easy</option><option selected>medium</option><option>hard</option></select>
+      <button class="btn p" id="gQuiz">Generate quiz</button>
+    </div>
+    <p class="msg" id="mQuiz"></p><div id="oQuiz"></div>
+  </div>
+
+  <div class="card pane" id="inf">
+    <button class="btn p" id="gInf">Generate infographic</button>
+    <p class="msg" id="mInf"></p><div id="oInf"></div>
+  </div>
+
+  <div class="card pane" id="vid">
+    <div class="row" style="margin-top:0">
+      <button class="btn p" id="gVid">Generate video</button>
+      <label class="msg"><input type="checkbox" id="speak" checked> Narrate aloud while rendering</label>
+    </div>
+    <p class="msg" id="mVid">Builds an animated explainer from AI-written scenes, rendered on a canvas and recorded as a video file.</p>
+    <canvas id="cv" width="1280" height="720" style="display:none"></canvas>
+    <video id="vp" controls style="display:none;margin-top:10px"></video>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const SAMPLE="Photosynthesis is the process by which green plants, algae and some bacteria convert light energy into chemical energy. It takes place mainly in the chloroplasts of leaf cells, where the pigment chlorophyll absorbs sunlight. The process has two stages. In the light-dependent reactions, light splits water molecules, releasing oxygen and producing ATP and NADPH. In the Calvin cycle, which does not need light directly, the plant uses ATP and NADPH to fix carbon dioxide into glucose. The overall equation is 6CO2 + 6H2O + light → C6H12O6 + 6O2. Photosynthesis supplies the oxygen we breathe and forms the base of almost every food chain. Factors such as light intensity, carbon dioxide concentration and temperature affect its rate.";
+let sample=null;
+const src=$("#src");
+src.addEventListener("input",()=>{$("#count").textContent=(src.value.trim().split(/\s+/).filter(Boolean).length)+" words"});
+$("#sample").onclick=()=>{src.value=SAMPLE;src.dispatchEvent(new Event("input"))};
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id===t.dataset.t));
+});
+async function callAI(prompt){
+  const r=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+  const d=await r.json();
+  if(!r.ok)throw{message:d.error||"Server error"};
+  return d.text;
+}
+async function ai(){
+  if(sample)return sample;
+  const s=async(prompt,opts)=>{const text=await callAI(prompt);if(opts&&opts.onText)opts.onText({text});return text};
+  s.json=async prompt=>{const t=await callAI(prompt);return JSON.parse(t.replace(/```json|```/g,"").trim())};
+  sample=s;return sample;
+}
+function text(){const v=src.value.trim();if(v.split(/\s+/).length<20){alert("Please paste at least ~20 words of study material first.");return null}return v}
+async function run(btn,msgEl,fn){
+  const t=text();if(!t)return;
+  btn.disabled=true;msgEl.className="msg";msgEl.textContent="Working…";
+  try{const s=await ai();if(!s)throw{message:"AI unavailable"};await fn(s,t);msgEl.textContent=""}
+  catch(e){msgEl.className="msg err";msgEl.textContent="Error: "+(e.message||e.code||"something went wrong")}
+  btn.disabled=false;
+}
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const J=" Respond with ONLY valid JSON, no markdown fences.";
+
+/* Summariser */
+$("#gSum").onclick=e=>run(e.target,$("#mSum"),async(s,t)=>{
+  const o=$("#oSum");o.textContent="";
+  await s("Summarise the following study material as "+$("#slen").value+". Keep key terms and facts accurate.\n\n"+t,{onText:({text})=>{o.textContent=text}});
+});
+
+/* Quiz */
+$("#gQuiz").onclick=e=>run(e.target,$("#mQuiz"),async(s,t)=>{
+  const n=$("#qn").value,d=$("#qd").value;
+  const r=await s.json("Create "+n+" "+d+" multiple-choice questions from this material. Format: [{\"q\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"answer\":0,\"why\":\"one-line explanation\"}] where answer is the index of the correct option."+J+"\n\n"+t);
+  const qs=Array.isArray(r)?r:(r.questions||[]);
+  const box=$("#oQuiz");box.innerHTML="";let done=0,right=0;
+  const sc=document.createElement("div");sc.className="score";
+  qs.forEach((q,i)=>{
+    const d=document.createElement("div");d.className="q";
+    d.innerHTML="<b>"+(i+1)+". "+esc(q.q)+"</b>";
+    const w=document.createElement("div");w.className="why";
+    q.options.forEach((op,j)=>{
+      const b=document.createElement("button");b.className="opt";b.textContent=op;
+      b.onclick=()=>{
+        if(d.dataset.done)return;d.dataset.done=1;done++;
+        d.querySelectorAll(".opt").forEach((x,k)=>{if(k===q.answer)x.classList.add("ok")});
+        if(j===q.answer)right++;else b.classList.add("no");
+        w.textContent=q.why||"";
+        if(done===qs.length)sc.textContent="Score: "+right+" / "+qs.length;
+      };d.appendChild(b);
+    });
+    d.appendChild(w);box.appendChild(d);
+  });
+  box.appendChild(sc);
+});
+
+/* Infographic */
+$("#gInf").onclick=e=>run(e.target,$("#mInf"),async(s,t)=>{
+  const r=await s.json("Design an infographic from this material. Format: {\"title\":\"\",\"subtitle\":\"\",\"stats\":[{\"value\":\"short number or word\",\"label\":\"\"}] (3 items),\"points\":[{\"heading\":\"\",\"text\":\"max 25 words\"}] (4 to 6 items),\"takeaway\":\"\"}"+J+"\n\n"+t);
+  $("#oInf").innerHTML='<div class="info"><h2>'+esc(r.title)+'</h2><p>'+esc(r.subtitle)+'</p><div class="stats">'+
+   (r.stats||[]).map(x=>'<div class="stat"><b>'+esc(x.value)+'</b>'+esc(x.label)+'</div>').join("")+'</div><div class="pts">'+
+   (r.points||[]).map((p,i)=>'<div class="pt"><h3><span class="n">'+(i+1)+'</span>'+esc(p.heading)+'</h3>'+esc(p.text)+'</div>').join("")+
+   '</div><div class="take">💡 '+esc(r.takeaway)+'</div></div>';
+});
+
+/* Video */
+const cv=$("#cv"),cx=cv.getContext("2d");
+const PAL=[["#5b3df5","#8b74ff"],["#ff7a59","#ffb36b"],["#0ea5a4","#34d399"],["#d946ef","#8b5cf6"]];
+function wrap(str,x,y,w,lh){const words=str.split(" ");let l="";for(const wd of words){const tst=l+wd+" ";if(cx.measureText(tst).width>w&&l){cx.fillText(l,x,y);l=wd+" ";y+=lh}else l=tst}cx.fillText(l,x,y);return y+lh}
+function draw(sc,i,total,p){
+  const [a,b]=PAL[i%PAL.length];
+  const g=cx.createLinearGradient(0,0,1280,720);g.addColorStop(0,a);g.addColorStop(1,b);
+  cx.fillStyle=g;cx.fillRect(0,0,1280,720);
+  cx.fillStyle="rgba(255,255,255,.12)";cx.beginPath();cx.arc(1100+Math.sin(p*3)*30,140,170,0,7);cx.fill();
+  const al=Math.min(1,p*4);cx.globalAlpha=al;
+  cx.fillStyle="#fff";cx.textBaseline="top";
+  cx.font="bold 58px Segoe UI,sans-serif";let y=wrap(sc.title,80,90-(1-al)*30,980,70)+20;
+  cx.font="34px Segoe UI,sans-serif";
+  (sc.bullets||[]).forEach((bl,k)=>{const sh=Math.min(1,Math.max(0,p*(sc.bullets.length+1)-k-0.3));cx.globalAlpha=sh;y=wrap("• "+bl,80+(1-sh)*40,y,1060,46)+14});
+  cx.globalAlpha=1;cx.fillStyle="rgba(255,255,255,.35)";cx.fillRect(0,708,1280*((i+p)/total),12);
+  cx.font="24px Segoe UI,sans-serif";cx.fillStyle="#fff";cx.fillText("StudyForge",1100,660);
+}
+$("#gVid").onclick=e=>run(e.target,$("#mVid"),async(s,t)=>{
+  const r=await s.json("Write a 5 to 6 scene explainer video script for this material. Format: {\"scenes\":[{\"title\":\"short title\",\"bullets\":[\"max 8 words\", \"...\"] (2 to 3),\"narration\":\"1 to 2 sentences spoken\"}]}. First scene is an intro, last is a recap."+J+"\n\n"+t);
+  const scenes=r.scenes||[];if(!scenes.length)throw{message:"No scenes returned"};
+  if(typeof MediaRecorder==="undefined")throw{message:"This browser cannot record video."};
+  cv.style.display="block";$("#vp").style.display="none";
+  const rec=new MediaRecorder(cv.captureStream(30),{mimeType:MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm"});
+  const chunks=[];rec.ondataavailable=ev=>chunks.push(ev.data);
+  const fin=new Promise(res=>rec.onstop=res);rec.start();
+  const talk=$("#speak").checked&&"speechSynthesis"in window;
+  for(let i=0;i<scenes.length;i++){
+    const sc=scenes[i];$("#mVid").textContent="Rendering scene "+(i+1)+" of "+scenes.length+"…";
+    const dur=Math.max(4000,(sc.narration||"").split(" ").length*420+1500);
+    if(talk){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(sc.narration||""))}
+    const st=performance.now();
+    await new Promise(res=>{const f=()=>{const p=Math.min(1,(performance.now()-st)/dur);draw(sc,i,scenes.length,p);p<1?requestAnimationFrame(f):res()};f()});
+  }
+  speechSynthesis.cancel();rec.stop();await fin;
+  const v=$("#vp");v.src=URL.createObjectURL(new Blob(chunks,{type:"video/webm"}));
+  cv.style.display="none";v.style.display="block";
+  $("#mVid").textContent="Done! Press play. Right-click the video to save it.";
+});
+</script>
+</body>
+</html>
